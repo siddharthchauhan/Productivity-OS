@@ -1,5 +1,7 @@
 # Pulse — Productivity OS
 
+[![CI](https://github.com/siddharthchauhan/Productivity-OS/actions/workflows/ci.yml/badge.svg)](https://github.com/siddharthchauhan/Productivity-OS/actions/workflows/ci.yml)
+
 A local-first macOS desktop app that quietly tracks what you do, computes a daily 0–100 productivity score, and uses Claude to generate end-of-day reports + measurable suggestions — then checks whether you actually acted on those suggestions the next day.
 
 Everything is stored in a local SQLite file. No data leaves your machine except the AI report request itself.
