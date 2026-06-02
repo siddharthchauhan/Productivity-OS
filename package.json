@@ -12,6 +12,7 @@
     "rebuild": "electron-rebuild -f -w better-sqlite3",
     "postinstall": "electron-builder install-app-deps",
     "package:mac": "electron-vite build && electron-builder --mac --arm64 --x64",
+    "release:mac": "electron-vite build && electron-builder --mac --arm64 -c.npmRebuild=false",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
+    "@electron/notarize": "^3.1.1",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.10.2",
     "@types/node-cron": "^3.0.11",
@@ -45,9 +47,14 @@
   "build": {
     "appId": "com.siddharth.pulse",
     "productName": "Pulse",
+    "afterSign": "scripts/notarize.cjs",
     "mac": {
       "category": "public.app-category.productivity",
       "icon": "resources/icon.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
       "extendInfo": {
         "NSAppleEventsUsageDescription": "Pulse uses Apple Events to read the active window title for activity tracking.",
         "LSUIElement": false
