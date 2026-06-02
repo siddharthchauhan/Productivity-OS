@@ -71,11 +71,13 @@ const TITLE_RULES: Array<{ match: RegExp; category: Category; sourceId?: string 
   { match: /\bgoogle docs|docs\.google\b/i, category: 'planning' },
   { match: /\bmail\.google\.com|gmail\b/i, category: 'comms',    sourceId: 'gmail' },
   { match: /\blinkedin\.com\b/i,           category: 'distract', sourceId: 'linkedin' },
+  // Reclassify "technical" YouTube (talks, tutorials, courses) as learning.
+  // MUST precede the generic youtube.com rule below — first match wins, so the
+  // catch-all would otherwise shadow this and the rule would never fire.
+  { match: /\byoutube\.com.*(tutorial|conf|talk|lecture|course|guide)\b/i, category: 'learning', sourceId: 'youtube' },
   { match: /\byoutube\.com\b/i,            category: 'distract', sourceId: 'youtube' },
   { match: /\b(twitter|x)\.com\b/i,        category: 'distract' },
   { match: /\b(reddit|instagram|tiktok|facebook)\.com\b/i, category: 'distract' },
-  // Reclassify "technical" YouTube as learning (chat decision from the design phase).
-  { match: /\byoutube\.com.*(tutorial|conf|talk|lecture|course|guide)\b/i, category: 'learning', sourceId: 'youtube' },
   { match: /\b(stackoverflow|mdn|developer\.mozilla|readthedocs)\b/i, category: 'learning' },
 ];
 
