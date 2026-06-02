@@ -69,8 +69,10 @@ export function componentScores(m: DayMetrics): ScoreComponent[] {
       label: 'Output shipped',
       weight: WEIGHTS.output,
       // baseline proxy until we wire git/GitHub: deep-work events count
-      value: clamp01((m.bySource['vscode']?.events ?? 0) + (m.bySource['cursor']?.events ?? 0)
-        ) / TARGETS.outputEvents * 100,
+      value: clamp01(
+        ((m.bySource['vscode']?.events ?? 0) + (m.bySource['cursor']?.events ?? 0))
+        / TARGETS.outputEvents
+      ) * 100,
       delta: 0,
       detail: `${(m.bySource['cursor']?.events ?? 0)} Cursor sessions · ${(m.bySource['vscode']?.events ?? 0)} VS Code sessions`,
       icon: 'gitBranch'
