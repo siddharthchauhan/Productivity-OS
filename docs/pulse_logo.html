@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pulse — Logo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap">
+<style>
+  html, body { margin: 0; background: transparent; }
+  #c { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1280" height="420"></canvas>
+<script>
+(function () {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // ---- Brand palette ----
+  const AZURE_DEEP = '#1D4ED8';
+  const AZURE_MID  = '#3B82F6';
+  const AZURE_LITE = '#60A5FA';
+  const SLATE      = '#0F172A';
+
+  function azureGrad(x0, y0, x1, y1) {
+    const g = ctx.createLinearGradient(x0, y0, x1, y1);
+    g.addColorStop(0.0, AZURE_DEEP);
+    g.addColorStop(0.52, AZURE_MID);
+    g.addColorStop(1.0, AZURE_LITE);
+    return g;
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const cy = H / 2;
+
+    // =====================================================================
+    // GRAPHIC MARK (left) — an editorial pulse glyph: a heartbeat waveform
+    // riding a clean baseline, in the azure gradient. No tile; sits on
+    // transparency. The R-spike apex carries a bright pulse node.
+    // =====================================================================
+    const markLeft  = 92;
+    const markRight = 250;
+    const markSpan  = markRight - markLeft;
+    const baseY     = cy;
+    const stroke    = 26;
+    const A         = 90; // vertical amplitude unit
+
+    // ECG waypoints: flat -> upbeat -> brief dip -> tall R spike -> deep S -> recover -> flat
+    const wpRaw = [
+      [0.00,  0.00],
+      [0.30,  0.00],
+      [0.40, -0.16],   // small upbeat
+      [0.49,  0.26],   // brief dip before the spike
+      [0.59, -1.00],   // tall R spike (up)
+      [0.69,  0.60],   // deep S trough (down)
+      [0.79, -0.10],
+      [0.88,  0.00],
+      [1.00,  0.00],
+    ];
+    const wp = wpRaw.map(([nx, ny]) => [markLeft + nx * markSpan, baseY + ny * A]);
+    const mGrad = azureGrad(markLeft, baseY - A, markRight, baseY + A);
+
+    function strokeWave(points, width, gradient, withGlow) {
+      ctx.save();
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.lineWidth = width;
+      ctx.strokeStyle = gradient;
+      if (withGlow) {
+        ctx.shadowColor = 'rgba(37,99,235,0.32)';
+        ctx.shadowBlur = 24;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 10;
+      }
+      ctx.beginPath();
+      ctx.moveTo(points[0][0], points[0][1]);
+      for (let i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1]);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    strokeWave(wp, stroke, mGrad, true);   // glow underlay
+    strokeWave(wp, stroke, mGrad, false);  // crisp top pass
+
+    const apex = wp[4];
+    drawNode(apex[0], apex[1], 17);
+
+    // =====================================================================
+    // WORDMARK "Pulse" (right) — Inter 700, slate. The "l" stem is replaced
+    // by a heartbeat spike in the azure gradient; its tittle/apex carries a
+    // pulse node. Real glyph metrics drive integration & spacing.
+    // =====================================================================
+    const fontPx = 168;
+    const fontStack = '700 ' + fontPx + 'px "Inter", system-ui, -apple-system, sans-serif';
+    ctx.font = fontStack;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+
+    // vertical centering using real ascent/descent of the full word
+    const mm = ctx.measureText('Pulse');
+    let asc = mm.actualBoundingBoxAscent, desc = mm.actualBoundingBoxDescent;
+    if (!isFinite(asc) || asc <= 0) asc = fontPx * 0.72;
+    if (!isFinite(desc) || desc < 0) desc = fontPx * 0.06;
+    const baseline = cy + (asc - desc) / 2;
+
+    const wordX = markRight + 76;
+
+    // segment widths
+    const segA = 'Pu';
+    const segC = 'se';
+    const wA = ctx.measureText(segA).width;
+    const wL = ctx.measureText('l').width;   // natural advance of the 'l'
+    const xL = wordX + wA;                    // left edge of the 'l' slot
+
+    // cap top via 'l' ascent
+    const mL = ctx.measureText('l');
+    let lAsc = mL.actualBoundingBoxAscent;
+    if (!isFinite(lAsc) || lAsc <= 0) lAsc = fontPx * 0.725;
+    const capTop = baseline - lAsc;
+
+    // helper to draw slate text with a faint crisping shadow
+    function slateText(str, x) {
+      ctx.save();
+      ctx.font = fontStack;
+      ctx.fillStyle = SLATE;
+      ctx.shadowColor = 'rgba(15,23,42,0.10)';
+      ctx.shadowBlur = 3;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 2;
+      ctx.fillText(str, x, baseline);
+      ctx.restore();
+    }
+
+    // ---- "Pu" ----
+    slateText(segA, wordX);
+
+    // ---- custom "l" = heartbeat spike (azure) ----
+    // A clean vertical stem (so the word stays legible as "Pulse") that, just
+    // below cap height, kicks into a crisp ECG zig — the heartbeat beat — and
+    // its tittle becomes a glowing pulse node. Stays inside the 'l' slot and on
+    // the baseline so it does not break the wordmark.
+    (function () {
+      const stemW = fontPx * 0.110;            // matches Inter 700 stem weight
+      const midX  = xL + wL * 0.50;            // visual center of the 'l' slot
+      const footY = baseline;                  // sits exactly on the type baseline
+      const apexY = capTop + stemW * 0.5;      // spike apex at cap height
+
+      // ECG kink lives in the upper third of the stem; amplitude kept within slot.
+      // A clean single beat: stem rises, kicks left (down-beat), kicks right
+      // (up-beat), then spikes straight to the apex node.
+      const kAmp  = wL * 0.40;                  // horizontal kick magnitude
+      const kY1   = capTop + fontPx * 0.300;    // down-beat y
+      const kY2   = capTop + fontPx * 0.170;    // up-beat y
+
+      const wl = [
+        [midX,                footY],           // foot on baseline
+        [midX,                kY1 + fontPx * 0.02], // straight stem up
+        [midX - kAmp,         kY1],             // down-beat (left)
+        [midX + kAmp,         kY2],             // up-beat (right)
+        [midX,                apexY],           // spike straight up to the apex node
+      ];
+
+      const lg = azureGrad(midX, apexY, midX, footY);
+
+      function strokeL(glow) {
+        ctx.save();
+        ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        ctx.lineWidth = stemW; ctx.strokeStyle = lg;
+        if (glow) { ctx.shadowColor = 'rgba(37,99,235,0.30)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4; }
+        ctx.beginPath();
+        ctx.moveTo(wl[0][0], wl[0][1]);
+        for (let i = 1; i < wl.length; i++) ctx.lineTo(wl[i][0], wl[i][1]);
+        ctx.stroke();
+        ctx.restore();
+      }
+      strokeL(true);
+      strokeL(false);
+
+      drawNode(midX, apexY, fontPx * 0.052); // tittle / pulse node
+    })();
+
+    // ---- "se" (natural advance preserves spacing/kerning) ----
+    slateText(segC, xL + wL);
+
+    window.__done = true;
+  }
+
+  // glossy azure->white pulse node
+  function drawNode(x, y, r) {
+    const g = ctx.createRadialGradient(x - r * 0.32, y - r * 0.32, r * 0.1, x, y, r);
+    g.addColorStop(0.0, '#FFFFFF');
+    g.addColorStop(0.40, AZURE_LITE);
+    g.addColorStop(1.0, AZURE_MID);
+    ctx.save();
+    ctx.beginPath();
+    ctx.fillStyle = g;
+    ctx.shadowColor = 'rgba(96,165,250,0.55)';
+    ctx.shadowBlur = 12;
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.beginPath();
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.arc(x - r * 0.3, y - r * 0.36, r * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  async function start() {
+    try {
+      if (document.fonts && document.fonts.load) {
+        await Promise.all([
+          document.fonts.load('700 168px "Inter"'),
+          document.fonts.load('800 168px "Inter"'),
+          document.fonts.load('600 168px "Inter"'),
+        ]);
+      }
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    } catch (e) { /* fall back to system font */ }
+    draw();
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>
