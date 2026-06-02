@@ -18,7 +18,9 @@ interface Classification {
 const APP_RULES: Array<{ match: RegExp; category: Category; sourceId?: string }> = [
   // Code & editors  → deep work
   { match: /\b(cursor)\b/i,                category: 'deepwork', sourceId: 'cursor' },
-  { match: /\b(visual studio code|vscode|code-insiders|vscodium)\b/i, category: 'deepwork', sourceId: 'vscode' },
+  // Bare "code" covers VS Code's macOS app name (active-win reports "Code").
+  // \bcode\b won't match "Xcode" (no word boundary), which has its own rule below.
+  { match: /\b(visual studio code|vscode|vscodium|code-insiders|code)\b/i, category: 'deepwork', sourceId: 'vscode' },
   { match: /\b(xcode|android studio|intellij|webstorm|pycharm|rubymine|goland)\b/i, category: 'deepwork', sourceId: 'vscode' },
   { match: /\b(terminal|iterm2?|warp|alacritty|hyper|kitty|tabby)\b/i, category: 'deepwork' },
   { match: /\b(sublime text|nova|zed|neovim|nvim|vim|emacs)\b/i, category: 'deepwork', sourceId: 'vscode' },

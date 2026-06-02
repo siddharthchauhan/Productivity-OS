@@ -47,6 +47,7 @@ describe('classify', () => {
     it.each<[string, Category, string | undefined]>([
       ['Cursor', 'deepwork', 'cursor'],
       ['Visual Studio Code', 'deepwork', 'vscode'],
+      ['Code', 'deepwork', 'vscode'], // VS Code's macOS app name
       ['IntelliJ IDEA', 'deepwork', 'vscode'],
       ['Warp', 'deepwork', undefined],
       ['Slack', 'comms', 'slack'],
@@ -61,11 +62,10 @@ describe('classify', () => {
       expect(c.sourceId).toBe(sourceId);
     });
 
-    it('does not yet recognize the bare "Code" app name (known coverage gap)', () => {
-      // VS Code reports its macOS app name as "Code"; the editor rules match
-      // "vscode" / "visual studio code" but not bare "code", so it lands in
-      // 'other'. Flagged as a gap — update this test when the rule is widened.
-      expect(classify('Code').category).toBe('other');
+    it('does not match "Xcode" via the bare "code" alternative', () => {
+      // \bcode\b has no word boundary inside "Xcode"; it hits its own rule,
+      // which also maps to vscode — assert the source to lock the behavior.
+      expect(classify('Xcode')).toMatchObject({ category: 'deepwork', sourceId: 'vscode' });
     });
   });
 
