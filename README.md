@@ -4,6 +4,10 @@ A local-first macOS desktop app that quietly tracks what you do, computes a dail
 
 Everything is stored in a local SQLite file. No data leaves your machine except the AI report request itself.
 
+![Pulse — the Today dashboard](docs/screenshot.png)
+
+> **The Today view** — a live 0–100 productivity score broken into five components, time allocation by category, per-source activity, an hourly focus strip, and Claude's end-of-day report with measurable suggestions. *(Shown with representative demo data, not real activity.)*
+
 ## Stack
 
 - **Electron** + **Vite** + **React** + **TypeScript** — desktop shell + UI
