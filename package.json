@@ -12,7 +12,9 @@
     "rebuild": "electron-rebuild -f -w better-sqlite3",
     "postinstall": "electron-builder install-app-deps",
     "package:mac": "electron-vite build && electron-builder --mac --arm64 --x64",
-    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json"
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
@@ -37,7 +39,8 @@
     "electron-rebuild": "^3.2.9",
     "electron-vite": "^2.3.0",
     "typescript": "^5.7.2",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "vitest": "^4.1.8"
   },
   "build": {
     "appId": "com.siddharth.pulse",
@@ -49,7 +52,11 @@
         "LSUIElement": false
       }
     },
-    "directories": { "output": "dist" },
-    "files": ["out/**/*"]
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*"
+    ]
   }
 }
