@@ -7,14 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.1.0] - 2026-06-02
+
+First release of Pulse.
+
 ### Added
-- Apache-2.0 license.
-- README with a Today-dashboard screenshot and a CI status badge.
-- Vitest unit suite covering the scoring (`componentScores`), metrics
-  (`metricsForDay`, `computeDeepFocus`), and classifier (`classify`) logic.
-- GitHub Actions CI (`Typecheck & test`) on every push and pull request, plus
-  branch protection requiring it to pass before merge.
-- `CONTRIBUTING.md` documenting the branch-protection / PR workflow.
+- **Pulse desktop app** — a local-first macOS productivity tracker (Electron +
+  Vite + React + TypeScript). Records foreground activity to a local SQLite
+  database, classifies it into categories and per-app sources, computes a daily
+  0–100 productivity score across five weighted components, and uses Claude to
+  generate end-of-day reports plus measurable, machine-checkable suggestions —
+  then evaluates whether yesterday's suggestions were followed.
+- **App icon and brand logo** — an azure-gradient squircle with a heartbeat
+  mark, plus a "Pulse" wordmark lockup (light/dark README variants).
+- **macOS menu-bar (Tray) icon** with an Open / Quit menu; Pulse stays in the
+  menu bar when its window is closed.
+- **Vitest test suite** (52 tests) covering the scoring (`componentScores`),
+  metrics (`metricsForDay`, `computeDeepFocus`), and classifier (`classify`) logic.
+- **GitHub Actions CI** (typecheck + tests) on every push and pull request,
+  branch protection requiring it to pass, a CI status badge, and `CONTRIBUTING.md`.
+- **Apache-2.0 license** and a README with a Today-dashboard screenshot.
 
 ### Fixed
 - "Output shipped" score component collapsed to ~1 on any active day because
@@ -24,12 +38,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - VS Code's macOS app name (`Code`) was misclassified as `other` because the
   editor rule only matched `vscode` / `visual studio code`.
 
-## [0.1.0] - 2026-06-02
-
-### Added
-- Initial Pulse desktop app — a local-first macOS productivity tracker
-  (Electron + Vite + React + TypeScript). Records foreground activity to a local
-  SQLite database, classifies it into categories and per-app sources, computes a
-  daily 0–100 productivity score across five weighted components, and uses Claude
-  to generate end-of-day reports plus measurable, machine-checkable suggestions —
-  then evaluates whether yesterday's suggestions were followed.
+[Unreleased]: https://github.com/siddharthchauhan/Productivity-OS/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/siddharthchauhan/Productivity-OS/releases/tag/v0.1.0
