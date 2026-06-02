@@ -67,10 +67,26 @@ Renderer (UI) tweaks live in `src/renderer/styles/tokens.css` and `App.tsx`.
 ## Building a `.dmg`
 
 ```bash
-npm run package:mac     # produces a signed-ready Pulse.dmg under dist/
+npm run package:mac     # ad-hoc build → dist/Pulse-<version>-arm64.dmg
 ```
 
-(Code signing requires an Apple Developer cert — out of scope for the dev workflow.)
+This produces an **ad-hoc–signed** app: it runs on your own Mac, but other Macs
+show a one-time Gatekeeper warning on first open (a quick "Open Anyway" / `xattr`
+step — see the latest [release notes](https://github.com/siddharthchauhan/Productivity-OS/releases/latest)).
+
+### Signed & notarized release
+
+With an Apple Developer ID you can build a release that opens with **no warning on
+any Mac**:
+
+```bash
+export APPLE_ID=…  APPLE_APP_SPECIFIC_PASSWORD=…  APPLE_TEAM_ID=…
+npm run release:mac     # signs with Developer ID, notarizes, and staples
+```
+
+The notarization step stays dormant without credentials, so the ad-hoc build above
+keeps working unchanged. Full setup and options are in
+[docs/RELEASING.md](docs/RELEASING.md).
 
 ## Changelog
 
