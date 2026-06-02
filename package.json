@@ -47,6 +47,7 @@
     "productName": "Pulse",
     "mac": {
       "category": "public.app-category.productivity",
+      "icon": "resources/icon.png",
       "extendInfo": {
         "NSAppleEventsUsageDescription": "Pulse uses Apple Events to read the active window title for activity tracking.",
         "LSUIElement": false
