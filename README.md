@@ -65,6 +65,10 @@ npm run package:mac     # produces a signed-ready Pulse.dmg under dist/
 
 (Code signing requires an Apple Developer cert — out of scope for the dev workflow.)
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release history and notable changes.
+
 ## License
 
 Licensed under the [Apache License 2.0](LICENSE). © 2026 Siddharth Chauhan.
