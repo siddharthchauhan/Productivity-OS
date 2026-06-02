@@ -1,6 +1,13 @@
-# Pulse — Productivity OS
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.png">
+    <img src="docs/logo-light.png" alt="Pulse — Productivity OS" width="360">
+  </picture>
+</p>
 
-[![CI](https://github.com/siddharthchauhan/Productivity-OS/actions/workflows/ci.yml/badge.svg)](https://github.com/siddharthchauhan/Productivity-OS/actions/workflows/ci.yml)
+<p align="center">
+  <a href="https://github.com/siddharthchauhan/Productivity-OS/actions/workflows/ci.yml"><img src="https://github.com/siddharthchauhan/Productivity-OS/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+</p>
 
 A local-first macOS desktop app that quietly tracks what you do, computes a daily 0–100 productivity score, and uses Claude to generate end-of-day reports + measurable suggestions — then checks whether you actually acted on those suggestions the next day.
 

@@ -28,7 +28,7 @@ export function Sidebar({
         <div className="brand-mark">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff"
             strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 12h4l2.5 7 4-15 2.5 8h5" />
+            <path d="M2.5 13 H7.5 L9.5 10.5 L12 17 L14 6 L16.5 14.5 L18 13 H21.5" />
           </svg>
         </div>
         <span className="brand-name">Pulse<em>.</em></span>
