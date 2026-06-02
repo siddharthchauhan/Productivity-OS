@@ -116,7 +116,7 @@ function buildMetrics(date: string, events: ActivityEvent[], dayStart: number): 
   };
 }
 
-function computeDeepFocus(events: ActivityEvent[]): number {
+export function computeDeepFocus(events: ActivityEvent[]): number {
   // sum minutes inside deep-work runs broken by < 5m of comms/distract/etc.
   let total = 0;
   let runStart: number | undefined;
