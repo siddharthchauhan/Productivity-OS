@@ -101,22 +101,52 @@ describe('componentScores', () => {
   });
 
   describe('comms', () => {
+    // Penalty metrics need exposure: full credit requires >= 2h of tracked
+    // active time (see the activity-credit tests below).
     it('rewards a lean inbox against a 180m ceiling', () => {
-      expect(value(metrics({ commsMins: 0 }), 'comms')).toBe(100);
-      expect(value(metrics({ commsMins: 90 }), 'comms')).toBe(50);
+      expect(value(metrics({ commsMins: 0, totalActiveMins: 300 }), 'comms')).toBe(100);
+      expect(value(metrics({ commsMins: 90, totalActiveMins: 300 }), 'comms')).toBe(50);
     });
     it('floors at 0', () => {
-      expect(value(metrics({ commsMins: 360 }), 'comms')).toBe(0);
+      expect(value(metrics({ commsMins: 360, totalActiveMins: 300 }), 'comms')).toBe(0);
     });
   });
 
   describe('discipline', () => {
     it('penalizes distraction time against a 120m ceiling', () => {
-      expect(value(metrics({ distractMins: 0 }), 'discipline')).toBe(100);
-      expect(value(metrics({ distractMins: 60 }), 'discipline')).toBe(50);
+      expect(value(metrics({ distractMins: 0, totalActiveMins: 300 }), 'discipline')).toBe(100);
+      expect(value(metrics({ distractMins: 60, totalActiveMins: 300 }), 'discipline')).toBe(50);
     });
     it('floors at 0', () => {
-      expect(value(metrics({ distractMins: 240 }), 'discipline')).toBe(0);
+      expect(value(metrics({ distractMins: 240, totalActiveMins: 300 }), 'discipline')).toBe(0);
+    });
+  });
+
+  describe('activity credit for penalty-based components', () => {
+    it('awards no free points on an untracked day (the constant-32 bug)', () => {
+      // With zero tracked activity, "no email" and "no distractions" prove
+      // nothing — every component must be 0, not a 32-point floor.
+      const cs = componentScores(metrics());
+      for (const c of cs) expect(c.value).toBe(0);
+    });
+
+    it('scales comms and discipline credit with tracked active time', () => {
+      // 38m active out of the 120m full-credit ramp -> 100 * 38/120 = 32
+      const m = metrics({ totalActiveMins: 38, commsMins: 0, distractMins: 0 });
+      expect(value(m, 'comms')).toBe(32);
+      expect(value(m, 'discipline')).toBe(32);
+    });
+
+    it('reaches full credit at 2h of tracked activity', () => {
+      const m = metrics({ totalActiveMins: 120, commsMins: 0, distractMins: 0 });
+      expect(value(m, 'comms')).toBe(100);
+      expect(value(m, 'discipline')).toBe(100);
+    });
+
+    it('does not scale the earned components (focus/output/leverage)', () => {
+      // Deep focus is evidence in itself; it must not be dampened on thin days.
+      const m = metrics({ totalActiveMins: 30, deepFocusMins: 120 });
+      expect(value(m, 'focus')).toBe(50);
     });
   });
 });

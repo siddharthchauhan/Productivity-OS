@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Penalty-based score components now earn credit with tracked activity** —
+  comms hygiene and focus discipline started at 100 and only lost points, so
+  an untracked day scored a constant 32 ("perfect marks for no data"). Their
+  credit now scales with tracked active time, reaching full credit at 2 hours.
+  An empty day scores 0; a normal workday is unchanged.
+
 ### Fixed
 - **Today queried the wrong day in the evening** — "today" was computed in UTC
   (`toISOString()`) but interpreted as a local day, so west of Greenwich the
