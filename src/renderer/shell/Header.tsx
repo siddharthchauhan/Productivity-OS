@@ -1,6 +1,6 @@
 import React from 'react';
 import { Icon } from '../lib/icons';
-import { ymdLabel } from '../lib/api';
+import { ymdLabel, todayISO } from '../lib/api';
 import type { TrackerStatus } from '@shared/types';
 
 const TITLES: Record<string, string> = {
@@ -25,7 +25,7 @@ export function Header({
     <header className="header">
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flex: 1, minWidth: 0 }}>
         <span className="header-title">{TITLES[view] ?? 'Pulse'}</span>
-        <span className="header-date">{ymdLabel(new Date().toISOString().slice(0, 10))}</span>
+        <span className="header-date">{ymdLabel(todayISO())}</span>
       </div>
       <div className="header-status">
         <span className={'status-dot ' + (running ? '' : 'idle')} />

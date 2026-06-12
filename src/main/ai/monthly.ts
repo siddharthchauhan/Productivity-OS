@@ -2,6 +2,7 @@
 // suggestion outcomes, and asks the model for a narrative.
 
 import type { DailyReport, MonthlyReport } from '@shared/types';
+import { localDateStr } from '@shared/dates';
 import { client, getModel, hasApiKey } from './client';
 import { listReportsBetween, saveMonthlyReport, improvementRate } from '../db/repo';
 import { ymOf } from '../metrics';
@@ -113,4 +114,4 @@ function monthBounds(ym: string): [string, string] {
   return [start, end];
 }
 
-export function currentYm(): string { return ymOf(new Date().toISOString().slice(0, 10)); }
+export function currentYm(): string { return ymOf(localDateStr()); }

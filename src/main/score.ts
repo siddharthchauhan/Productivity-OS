@@ -68,9 +68,11 @@ export function componentScores(m: DayMetrics): ScoreComponent[] {
       id: 'output',
       label: 'Output shipped',
       weight: WEIGHTS.output,
-      // baseline proxy until we wire git/GitHub: deep-work events count
+      // baseline proxy until we wire git/GitHub: deep-work events count.
+      // Sources whose total time rounds to 0 minutes contribute no events —
+      // a burst of seconds-long focus flickers isn't shipped output.
       value: clamp01(
-        ((m.bySource['vscode']?.events ?? 0) + (m.bySource['cursor']?.events ?? 0))
+        (editorEvents(m, 'vscode') + editorEvents(m, 'cursor'))
         / TARGETS.outputEvents
       ) * 100,
       delta: 0,
@@ -121,6 +123,11 @@ function bandFor(v: number): string {
   if (v >= 40) return 'Mixed day';
   if (v >= 20) return 'Recovery day';
   return 'Off day';
+}
+
+function editorEvents(m: DayMetrics, id: string): number {
+  const s = m.bySource[id];
+  return s && s.mins > 0 ? s.events : 0;
 }
 
 function clamp01(x: number) { return Math.max(0, Math.min(1, x)); }

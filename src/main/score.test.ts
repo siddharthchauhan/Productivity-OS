@@ -81,6 +81,11 @@ describe('componentScores', () => {
       const m = metrics({ bySource: { cursor: { mins: 300, events: 200 } } });
       expect(value(m, 'output')).toBe(100);
     });
+    it('ignores sessions from sources whose time rounds to 0 minutes', () => {
+      // A flurry of seconds-long editor focus flickers is not shipped output.
+      const m = metrics({ bySource: { cursor: { mins: 0, events: 50 } } });
+      expect(value(m, 'output')).toBe(0);
+    });
   });
 
   describe('leverage', () => {

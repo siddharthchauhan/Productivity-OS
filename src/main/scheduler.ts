@@ -4,7 +4,8 @@ import cron from 'node-cron';
 import { generateDailyReport } from './ai/daily-report';
 import { evaluateSuggestions } from './ai/improvement';
 import { generateMonthlyReport, currentYm } from './ai/monthly';
-import { metricsForDay, todayDate } from './metrics';
+import { addDays } from '@shared/dates';
+import { metricsForDay, todayDate, ymOf } from './metrics';
 import { dayScore, eventsForDay } from './score';
 import { getDailyReport } from './db/repo';
 
@@ -58,9 +59,7 @@ export async function runDailyPipeline(date?: string) {
   const report = await generateDailyReport(targetDate, m, score, yesterday, history);
 
   // 3) If this is the last day of the month, also kick a monthly.
-  const dt = new Date(targetDate);
-  const nextDay = new Date(dt); nextDay.setDate(dt.getDate() + 1);
-  if (nextDay.getMonth() !== dt.getMonth()) {
+  if (ymOf(addDays(targetDate, 1)) !== ymOf(targetDate)) {
     await generateMonthlyReport(currentYm()).catch(console.error);
   }
 
@@ -68,9 +67,7 @@ export async function runDailyPipeline(date?: string) {
 }
 
 function prevDay(d: string): string {
-  const dt = new Date(d + 'T00:00:00');
-  dt.setDate(dt.getDate() - 1);
-  return dt.toISOString().slice(0, 10);
+  return addDays(d, -1);
 }
 
 function recentAvg(date: string): number {
@@ -82,9 +79,7 @@ function recentAvg(date: string): number {
 function recentScoreHistory(upTo: string, days = 7) {
   const out = [];
   for (let i = 1; i <= days; i++) {
-    const d = new Date(upTo + 'T00:00:00');
-    d.setDate(d.getDate() - i);
-    const iso = d.toISOString().slice(0, 10);
+    const iso = addDays(upTo, -i);
     const m = metricsForDay(iso);
     if (m.totalActiveMins === 0) continue;
     out.push(dayScore(iso, m));

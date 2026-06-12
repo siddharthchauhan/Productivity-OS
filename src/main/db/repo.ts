@@ -9,6 +9,7 @@ import type {
   Suggestion,
   SuggestionTarget
 } from '@shared/types';
+import { localDateStr, addDays } from '@shared/dates';
 import { db } from './index';
 
 // ---------- events ----------
@@ -257,7 +258,5 @@ export function setSetting(key: string, value: string): void {
 // ---------- helpers ----------
 
 function isoDateNDaysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
+  return addDays(localDateStr(), -n);
 }

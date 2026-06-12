@@ -1,6 +1,7 @@
 // Typed shortcut for the preload bridge. Keeps view code clean: `api.today.score()`.
 
 import type { PulseAPI } from '@shared/api';
+import { localDateStr } from '@shared/dates';
 
 export const api: PulseAPI = (window as unknown as { api: PulseAPI }).api;
 
@@ -11,7 +12,7 @@ export function fmtMins(m: number): string {
 }
 
 export function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localDateStr();
 }
 
 export function ymdLabel(iso: string): string {

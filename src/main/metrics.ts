@@ -2,6 +2,7 @@
 // other than reading events through repo.
 
 import type { ActivityEvent, Category, DayMetrics, HourBucket, TimeSlice } from '@shared/types';
+import { localDateStr } from '@shared/dates';
 import { dayBounds } from './score';
 import { eventsInRange } from './db/repo';
 
@@ -31,37 +32,52 @@ const CATEGORY_COLORS: Record<Category, string> = {
 
 export function metricsForDay(date: string): DayMetrics {
   const [start, end] = dayBounds(date);
-  const events = eventsInRange(start, end).filter(e => !e.idle);
+  const events = eventsInRange(start, end)
+    .filter(e => !e.idle)
+    .map(e => clipToWindow(e, start, end))
+    .filter(e => e.durationMs > 0);
   return buildMetrics(date, events, start);
+}
+
+// An event that spans midnight is returned by eventsInRange for BOTH days, so
+// only the portion inside the window may count toward this day's totals —
+// otherwise a 11 PM–2 AM session is double-counted in full on each day.
+function clipToWindow(e: ActivityEvent, start: number, end: number): ActivityEvent {
+  const ts = Math.max(e.ts, start);
+  const endTs = Math.min(e.endTs, end);
+  if (ts === e.ts && endTs === e.endTs) return e;
+  return { ...e, ts, endTs, durationMs: Math.max(0, endTs - ts) };
 }
 
 function buildMetrics(date: string, events: ActivityEvent[], dayStart: number): DayMetrics {
   // ---- per-category & per-source aggregation ----
+  // Accumulate raw milliseconds and round once per aggregate at the end.
+  // Rounding per event silently discards everything under ~30s — and short
+  // events are the common case (window-title churn splits focus into slivers),
+  // so per-event rounding made most real activity vanish from the day.
   const byCat = new Map<Category, number>();
-  const bySource = new Map<string, { mins: number; events: number }>();
-  const appCounts = new Map<string, number>();
+  const bySource = new Map<string, { ms: number; events: number }>();
   let workStart: number | undefined;
   let workEnd: number | undefined;
-  let totalActive = 0;
+  let totalActiveMs = 0;
   let lastApp: string | undefined;
   let contextSwitches = 0;
 
   for (const e of events) {
-    const mins = Math.round(e.durationMs / 60000);
-    if (mins === 0) continue;
-    totalActive += mins;
+    if (e.durationMs <= 0) continue;
+    totalActiveMs += e.durationMs;
     workStart = workStart === undefined ? e.ts : Math.min(workStart, e.ts);
     workEnd = workEnd === undefined ? e.endTs : Math.max(workEnd, e.endTs);
 
-    byCat.set(e.category, (byCat.get(e.category) ?? 0) + mins);
-    appCounts.set(e.app, (appCounts.get(e.app) ?? 0) + 1);
+    byCat.set(e.category, (byCat.get(e.category) ?? 0) + e.durationMs);
     if (e.sourceId) {
-      const cur = bySource.get(e.sourceId) ?? { mins: 0, events: 0 };
-      bySource.set(e.sourceId, { mins: cur.mins + mins, events: cur.events + 1 });
+      const cur = bySource.get(e.sourceId) ?? { ms: 0, events: 0 };
+      bySource.set(e.sourceId, { ms: cur.ms + e.durationMs, events: cur.events + 1 });
     }
     if (lastApp && lastApp !== e.app) contextSwitches += 1;
     lastApp = e.app;
   }
+  const toMins = (ms: number) => Math.round(ms / 60000);
 
   // ---- hourly intensity strip (workday 8a..7p) ----
   const hours: HourBucket[] = [];
@@ -91,7 +107,7 @@ function buildMetrics(date: string, events: ActivityEvent[], dayStart: number): 
     .map(id => ({
       id,
       label: CATEGORY_LABELS[id],
-      mins: byCat.get(id) ?? 0,
+      mins: toMins(byCat.get(id) ?? 0),
       color: CATEGORY_COLORS[id]
     }))
     .filter(s => s.mins > 0);
@@ -103,22 +119,25 @@ function buildMetrics(date: string, events: ActivityEvent[], dayStart: number): 
     date,
     workStart: workStart ? hourLabel(workStart) : undefined,
     workEnd: workEnd ? hourLabel(workEnd) : undefined,
-    totalActiveMins: totalActive,
+    totalActiveMins: toMins(totalActiveMs),
     categories,
     hours,
-    bySource: Object.fromEntries(bySource),
+    bySource: Object.fromEntries(
+      [...bySource].map(([id, v]) => [id, { mins: toMins(v.ms), events: v.events }])
+    ),
     deepFocusMins,
-    meetingMins: byCat.get('meetings') ?? 0,
-    commsMins: byCat.get('comms') ?? 0,
-    distractMins: byCat.get('distract') ?? 0,
-    learningMins: byCat.get('learning') ?? 0,
+    meetingMins: toMins(byCat.get('meetings') ?? 0),
+    commsMins: toMins(byCat.get('comms') ?? 0),
+    distractMins: toMins(byCat.get('distract') ?? 0),
+    learningMins: toMins(byCat.get('learning') ?? 0),
     contextSwitches
   };
 }
 
 export function computeDeepFocus(events: ActivityEvent[]): number {
   // sum minutes inside deep-work runs broken by < 5m of comms/distract/etc.
-  let total = 0;
+  // Accumulate ms and round once so sub-minute runs don't vanish.
+  let totalMs = 0;
   let runStart: number | undefined;
   let runEnd: number | undefined;
   const ALLOW_BREAK_MS = 5 * 60_000;
@@ -128,15 +147,15 @@ export function computeDeepFocus(events: ActivityEvent[]): number {
       if (runStart === undefined) { runStart = e.ts; runEnd = e.endTs; }
       else if (e.ts - (runEnd ?? e.ts) <= ALLOW_BREAK_MS) { runEnd = e.endTs; }
       else {
-        total += Math.round(((runEnd ?? e.ts) - runStart) / 60000);
+        totalMs += (runEnd ?? e.ts) - runStart;
         runStart = e.ts; runEnd = e.endTs;
       }
     }
   }
   if (runStart !== undefined && runEnd !== undefined) {
-    total += Math.round((runEnd - runStart) / 60000);
+    totalMs += runEnd - runStart;
   }
-  return total;
+  return Math.round(totalMs / 60000);
 }
 
 function hourLabel(ts: number): string {
@@ -172,7 +191,7 @@ export function emptyMetrics(date: string): DayMetrics {
 }
 
 export function todayDate(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localDateStr();
 }
 
 export function ymOf(date: string): string {

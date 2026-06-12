@@ -7,6 +7,7 @@
 //     a structured `target` so we can evaluate adherence tomorrow.
 
 import type { DailyReport, DayMetrics, DayScore, Observation, Suggestion } from '@shared/types';
+import { localDateStr, addDays } from '@shared/dates';
 import { client, getModel } from './client';
 import { saveDailyReport, saveSuggestion, listReportsBetween } from '../db/repo';
 
@@ -191,13 +192,10 @@ function fmt(m: number) { return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` :
 function signed(n: number) { return n >= 0 ? `+${n}` : `${n}`; }
 
 function isoNextDay(d: string): string {
-  const dt = new Date(d + 'T00:00:00');
-  dt.setDate(dt.getDate() + 1);
-  return dt.toISOString().slice(0, 10);
+  return addDays(d, 1);
 }
 
 export function recentReports(days: number) {
-  const end = new Date().toISOString().slice(0, 10);
-  const start = new Date(Date.now() - days * 86400_000).toISOString().slice(0, 10);
-  return listReportsBetween(start, end);
+  const end = localDateStr();
+  return listReportsBetween(addDays(end, -days), end);
 }

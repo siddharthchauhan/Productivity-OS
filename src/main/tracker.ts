@@ -1,7 +1,11 @@
 // macOS foreground-window tracker.
 //
-// Polls active-win every POLL_MS. Whenever the foreground app, window title,
-// or idle state changes, we close the previous event and open a new one.
+// Polls active-win every POLL_MS. Whenever the foreground app, its
+// classification (category + source), or the idle state changes, we close the
+// previous event and open a new one. Title changes alone do NOT split events:
+// terminals and browsers rewrite their titles constantly (Warp animates a
+// spinner glyph every few seconds), and splitting on title turned an hour of
+// focus into hundreds of 5-second slivers.
 //
 // This is intentionally event-driven, not sample-driven: 1 minute of Slack +
 // 1 minute of Cursor produces 2 rows, not 24 (at a 5s poll). That makes the
@@ -10,14 +14,23 @@
 import { powerMonitor } from 'electron';
 import { insertEvent } from './db/repo';
 import { classify } from './classifier';
-import type { ActivityEvent } from '@shared/types';
+import type { ActivityEvent, Category } from '@shared/types';
 
 const POLL_MS = 5_000;
 const IDLE_THRESHOLD_S = 90; // counted as idle after 90s of no input
 
+interface OpenEvent {
+  ts: number;
+  app: string;
+  title?: string;
+  idle: boolean;
+  category: Category;
+  sourceId?: string;
+}
+
 let timer: NodeJS.Timeout | null = null;
 let running = false;
-let openEvent: { ts: number; app: string; title?: string; idle: boolean } | null = null;
+let openEvent: OpenEvent | null = null;
 let captureTitles = true;
 let eventCount24h = 0;
 let last24hRollAt = Date.now();
@@ -71,20 +84,25 @@ async function tick() {
     }
 
     const app = win.owner?.name ?? 'unknown';
-    const title = captureTitles ? (win.title ?? undefined) : undefined;
+    const title = captureTitles ? (win.title || undefined) : undefined;
+    const { category, sourceId } = classify(app, title);
 
     if (
       openEvent &&
       openEvent.app === app &&
-      openEvent.title === title &&
+      openEvent.category === category &&
+      openEvent.sourceId === sourceId &&
       openEvent.idle === isIdle
     ) {
-      // Same focus — extend by doing nothing; we'll close on next change.
+      // Same focus — extend. Keep the freshest title for the stored row, but a
+      // title change alone (spinner glyphs, tab retitles within the same
+      // classification) never splits the event.
+      if (title !== undefined) openEvent.title = title;
       return;
     }
 
     closeOpenEvent(now);
-    openEvent = { ts: now, app, title, idle: isIdle };
+    openEvent = { ts: now, app, title, idle: isIdle, category, sourceId };
   } catch (err) {
     // We deliberately swallow errors so a single poll glitch never kills the loop.
     console.warn('[tracker] tick failed:', err);
@@ -95,14 +113,13 @@ function closeOpenEvent(endTs: number) {
   if (!openEvent) return;
   const durationMs = endTs - openEvent.ts;
   if (durationMs < 2_000) { openEvent = null; return; } // ignore <2s blips
-  const { category, sourceId } = classify(openEvent.app, openEvent.title);
   const evt: ActivityEvent = {
     ts: openEvent.ts,
     endTs,
     app: openEvent.app,
     title: openEvent.title,
-    category,
-    sourceId,
+    category: openEvent.category,
+    sourceId: openEvent.sourceId,
     idle: openEvent.idle,
     durationMs
   };
