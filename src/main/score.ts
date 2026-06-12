@@ -27,6 +27,13 @@ const TARGETS = {
   distractMins: 120             // 0 = max discipline; >=120m = floor
 };
 
+// Comms hygiene and focus discipline are penalty metrics: they start at 100
+// and only lose points. Without exposure time that's meaningless — an
+// untracked day would earn perfect marks for "no email" and "no distractions",
+// flooring every empty day's score at a constant 32. Scale their credit by
+// tracked active time instead; full credit after 2 hours.
+const CREDIT_FULL_MINS = 120;
+
 export function dayScore(
   date: string,
   metrics: DayMetrics,
@@ -54,6 +61,7 @@ export function dayScore(
 }
 
 export function componentScores(m: DayMetrics): ScoreComponent[] {
+  const credit = clamp01(m.totalActiveMins / CREDIT_FULL_MINS);
   const items: ScoreComponent[] = [
     {
       id: 'focus',
@@ -98,7 +106,7 @@ export function componentScores(m: DayMetrics): ScoreComponent[] {
       weight: WEIGHTS.comms,
       // baseline: penalise excessive comms time. A future version will use
       // actual unread counts via Gmail / Outlook integrations.
-      value: clamp01(1 - m.commsMins / 180) * 100,
+      value: clamp01(1 - m.commsMins / 180) * 100 * credit,
       delta: 0,
       detail: `${fmtMins(m.commsMins)} on email + chat`,
       icon: 'mail'
@@ -107,7 +115,7 @@ export function componentScores(m: DayMetrics): ScoreComponent[] {
       id: 'discipline',
       label: 'Focus discipline',
       weight: WEIGHTS.discipline,
-      value: clamp01(1 - m.distractMins / TARGETS.distractMins) * 100,
+      value: clamp01(1 - m.distractMins / TARGETS.distractMins) * 100 * credit,
       delta: 0,
       detail: `${fmtMins(m.distractMins)} on distractions${m.learningMins ? ` · ${fmtMins(m.learningMins)} reclassified as learning` : ''}`,
       icon: 'shield'
