@@ -49,6 +49,57 @@ Then attach it to a GitHub release:
 gh release upload v<version> dist/Pulse-<version>-arm64.dmg --clobber
 ```
 
+## Local dev builds & macOS permissions
+
+Ad-hoc–signed builds get a **new signature hash every build**, and macOS TCC
+pins Accessibility / Screen Recording grants to that hash. Reinstalling a
+rebuilt app therefore re-triggers the permission dialog in a loop — while
+System Settings misleadingly shows the stale "Pulse" entry as enabled
+(toggling it does nothing; the entry references the old binary).
+
+The fix is a persistent self-signed certificate, so every local build shares
+one identity:
+
+```sh
+# One-time: create + import a self-signed code-signing cert "PulseDevSigning"
+cat > /tmp/pulse-cert.conf <<'EOF'
+[req]
+distinguished_name = dn
+x509_extensions = ext
+prompt = no
+[dn]
+CN = PulseDevSigning
+[ext]
+keyUsage = critical,digitalSignature
+extendedKeyUsage = critical,codeSigning
+basicConstraints = critical,CA:false
+EOF
+openssl req -x509 -newkey rsa:2048 -keyout /tmp/pulse-key.pem \
+  -out /tmp/pulse-crt.pem -days 3650 -nodes -config /tmp/pulse-cert.conf
+openssl pkcs12 -export -legacy -out /tmp/pulse.p12 \
+  -inkey /tmp/pulse-key.pem -in /tmp/pulse-crt.pem -passout pass:pulse
+security import /tmp/pulse.p12 -k ~/Library/Keychains/login.keychain-db \
+  -P pulse -T /usr/bin/codesign
+```
+
+Then after **every** local rebuild, re-sign before installing:
+
+```sh
+scripts/sign-local.sh                      # signs dist/mac-arm64/Pulse.app
+rm -rf /Applications/Pulse.app && ditto dist/mac-arm64/Pulse.app /Applications/Pulse.app
+```
+
+If permissions were already granted to an older ad-hoc build, clear the stale
+TCC entries once so fresh prompts can bind to the stable identity:
+
+```sh
+tccutil reset Accessibility com.siddharth.pulse
+tccutil reset ScreenCapture com.siddharth.pulse
+```
+
+(With a real Developer ID configured, none of this is needed — `release:mac`
+builds already have a stable identity.)
+
 ## Notes
 
 - **Architecture:** `release:mac` builds Apple Silicon (`arm64`) only. For Intel
