@@ -3,7 +3,7 @@ import { Card, SectionLabel, Delta, ToneDot } from '../components/Primitives';
 import { ScoreRing, StackBar, HourStrip, Sparkline } from '../components/Charts';
 import { BrandLogo } from '../components/BrandLogo';
 import { Icon, IconGlyph } from '../lib/icons';
-import { api, fmtMins } from '../lib/api';
+import { api, fmtMins, todayISO, ymdShort } from '../lib/api';
 import { SOURCES } from '../lib/sources';
 import type { DayMetrics, DayScore, DailyReport, Suggestion } from '@shared/types';
 
@@ -39,14 +39,14 @@ export function Today({ setView }: { setView: (v: string) => void }) {
       <div className="view-scroll">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div className="hero-grid">
-            <ScoreHero score={score} />
+            <ScoreHero score={score} hasActivity={hasActivity} />
             <TimeCard metrics={metrics} />
           </div>
           {hasActivity ? (
             <>
               <SectionLabel
                 right={<span style={{ fontSize: 11, color: 'var(--fg-3)' }}>
-                  {Object.keys(metrics.bySource).length} active today
+                  {SOURCES.filter(s => (metrics.bySource[s.id]?.mins ?? 0) > 0).length} active today
                 </span>}>
                 Source activity
               </SectionLabel>
@@ -75,7 +75,28 @@ export function Today({ setView }: { setView: (v: string) => void }) {
   );
 }
 
-function ScoreHero({ score }: { score: DayScore }) {
+function ScoreHero({ score, hasActivity }: { score: DayScore; hasActivity: boolean }) {
+  // With zero tracked activity the formula degenerates to a constant (the
+  // comms + discipline baselines), which reads as a real score. Show an honest
+  // empty state instead until activity arrives.
+  if (!hasActivity) {
+    return (
+      <Card style={{ display: 'flex', gap: 22, alignItems: 'center' }}>
+        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <ScoreRing value={0} band="No data yet" />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-1)', marginBottom: 6 }}>
+            No score yet
+          </div>
+          <p style={{ fontSize: 12.5, color: 'var(--fg-2)', lineHeight: 1.55, margin: 0 }}>
+            Pulse hasn’t recorded any active time today. Today’s score appears
+            as soon as foreground activity starts coming in.
+          </p>
+        </div>
+      </Card>
+    );
+  }
   return (
     <Card style={{ display: 'flex', gap: 22, alignItems: 'center' }}>
       <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -171,8 +192,9 @@ function TimeCard({ metrics }: { metrics: DayMetrics }) {
 }
 
 function SourceGrid({ metrics }: { metrics: DayMetrics }) {
-  // Render every active source in the design order
-  const active = SOURCES.filter(s => metrics.bySource[s.id]);
+  // Render every active source in the design order. Sources whose total time
+  // rounds to 0 minutes are hidden — a "0m" card reads as noise, not activity.
+  const active = SOURCES.filter(s => (metrics.bySource[s.id]?.mins ?? 0) > 0);
   if (active.length === 0) return null;
   return (
     <div className="source-grid">
@@ -211,6 +233,7 @@ function SourceGrid({ metrics }: { metrics: DayMetrics }) {
 function AttentionRail({
   report, suggestions, onView
 }: { report: DailyReport | null; suggestions: Suggestion[]; onView: () => void }) {
+  const reportIsToday = report?.date === todayISO();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <Card pad="14px">
@@ -252,7 +275,11 @@ function AttentionRail({
 
       <Card pad="0" style={{ overflow: 'hidden' }}>
         <div style={{ padding: '14px 14px 12px' }}>
-          <SectionLabel>End-of-day report</SectionLabel>
+          <SectionLabel right={report ? (
+            <span style={{ fontSize: 10.5, color: 'var(--fg-3)' }}>{ymdShort(report.date)}</span>
+          ) : null}>
+            End-of-day report
+          </SectionLabel>
           <div style={{ fontSize: 12, color: 'var(--fg-2)', lineHeight: 1.45 }}>
             {report?.headline ?? 'No report yet. Pulse generates the day’s analysis at 6:30 PM.'}
           </div>
@@ -262,7 +289,9 @@ function AttentionRail({
           </div>
         </div>
         <button className="report-cta" onClick={onView}>
-          {report ? 'View today’s report' : 'See report view'} <Icon.arrowR size={13} />
+          {report
+            ? (reportIsToday ? 'View today’s report' : `View report · ${ymdShort(report.date)}`)
+            : 'See report view'} <Icon.arrowR size={13} />
         </button>
       </Card>
     </div>

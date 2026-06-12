@@ -7,7 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet._
+### Fixed
+- **Today queried the wrong day in the evening** — "today" was computed in UTC
+  (`toISOString()`) but interpreted as a local day, so west of Greenwich the
+  app showed an empty, frozen-score day after 8 PM (EDT). All date strings now
+  come from local-timezone helpers in `src/shared/dates.ts`. Affected the Today
+  view, week trends, the daily/monthly schedulers, suggestion evaluation
+  windows, and the header date.
+- **Most tracked time silently vanished from metrics** — per-event rounding to
+  whole minutes dropped every event under ~30s (85% of recorded events).
+  Aggregates now accumulate milliseconds and round once per output value.
+- **Events spanning midnight were double-counted** — an 11 PM–2 AM session was
+  counted in full on both days. Events are now clipped to the day window
+  before aggregation.
+- **Tracker fragmented focus into 5-second slivers** — any window-title change
+  (e.g. Warp's animated spinner glyph) split the open event each poll. Events
+  now split only when the app, classification, or idle state changes; the title
+  refreshes in place.
+- **Misleading constant score with no data** — with zero tracked activity the
+  score formula degenerates to a constant 32; the Today hero now shows an
+  honest "No score yet" state, and the report rail labels which date the
+  latest report is from instead of presenting a stale one as today's.
 
 ## [0.1.0] - 2026-06-02
 

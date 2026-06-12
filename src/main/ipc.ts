@@ -3,6 +3,7 @@
 
 import { ipcMain } from 'electron';
 import type { AppSettings } from '@shared/types';
+import { addDays } from '@shared/dates';
 import { startTracker, stopTracker, trackerStatus } from './tracker';
 import { metricsForDay, todayDate, emptyMetrics, ymOf } from './metrics';
 import { dayScore } from './score';
@@ -122,13 +123,11 @@ function writeSettings(s: AppSettings) {
 function weekScores() {
   const out = [];
   for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const iso = d.toISOString().slice(0, 10);
+    const iso = addDays(todayDate(), -i);
     const m = metricsForDay(iso);
     out.push(dayScore(iso, m.totalActiveMins === 0 ? emptyMetrics(iso) : m));
   }
   return out;
 }
 
-export function _currentYm() { return ymOf(new Date().toISOString().slice(0, 10)); }
+export function _currentYm() { return ymOf(todayDate()); }
